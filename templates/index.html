@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lexisphere Compare - Word Bridge Explorer</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            /* SNES-inspired palette */
+            --snes-blue: #5a7ec2;
+            --snes-yellow: #e8c547;
+            --snes-green: #5ab97a;
+            --snes-red: #d64a4a;
+            --lavender: #9090c0;
+            --lavender-deep: #6b6b9d;
+
+            /* Glass morphism */
+            --glass-bg: rgba(255, 255, 255, 0.1);
+            --glass-border: rgba(255, 255, 255, 0.2);
+            --glass-shadow: rgba(0, 0, 0, 0.3);
+
+            /* Text */
+            --text-primary: #ffffff;
+            --text-secondary: rgba(255, 255, 255, 0.7);
+            --text-muted: rgba(255, 255, 255, 0.5);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            color: var(--text-primary);
+            overflow-x: hidden;
+        }
+
+        /* Header */
+        .header {
+            text-align: center;
+            padding: 2rem 1rem 1rem;
+        }
+
+        .terminal-header {
+            font-family: 'Space Mono', monospace;
+            color: var(--lavender);
+            font-size: 11px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+        }
+
+        .terminal-header a {
+            color: var(--lavender);
+            text-decoration: none;
+        }
+
+        .terminal-header a:hover {
+            text-decoration: underline;
+        }
+
+        .header h1 {
+            font-family: 'Space Mono', monospace;
+            font-size: 2rem;
+            font-weight: 700;
+            letter-spacing: 0.2em;
+            color: var(--text-primary);
+            text-shadow: 0 0 30px rgba(144, 144, 192, 0.5);
+            margin-bottom: 0.5rem;
+        }
+
+        .header p {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            letter-spacing: 0.05em;
+        }
+
+        /* Search Panel */
+        .search-panel {
+            max-width: 700px;
+            margin: 1.5rem auto;
+            padding: 1.5rem;
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            box-shadow: 0 8px 32px var(--glass-shadow);
+        }
+
+        .search-container {
+            display: flex;
+            gap: 0.75rem;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .input-group {
+            flex: 1;
+            min-width: 150px;
+        }
+
+        .input-label {
+            font-family: 'Space Mono', monospace;
+            font-size: 10px;
+            color: var(--lavender);
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            margin-bottom: 6px;
+            display: block;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 0.875rem 1.25rem;
+            font-size: 1.1rem;
+            font-family: 'Inter', sans-serif;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            color: var(--text-primary);
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        .search-input::placeholder {
+            color: var(--text-muted);
+        }
+
+        .search-input:focus {
+            border-color: var(--lavender);
+            box-shadow: 0 0 20px rgba(144, 144, 192, 0.3);
+        }
+
+        .vs-divider {
+            font-family: 'Space Mono', monospace;
+            font-size: 1rem;
+            color: var(--lavender);
+            font-weight: 700;
+            padding: 0 0.5rem;
+            margin-top: 1.5rem;
+        }
+
+        .search-btn {
+            padding: 0.875rem 1.5rem;
+            font-size: 1rem;
+            font-weight: 500;
+            font-family: 'Space Mono', monospace;
+            background: linear-gradient(135deg, var(--lavender) 0%, var(--snes-blue) 100%);
+            border: none;
+            border-radius: 12px;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+            margin-top: 1.5rem;
+        }
+
+        .search-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(144, 144, 192, 0.4);
+        }
+
+        .search-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .error-message {
+            background: rgba(214, 74, 74, 0.2);
+            border: 1px solid var(--snes-red);
+            border-radius: 12px;
+            padding: 1rem;
+            margin-top: 1rem;
+            text-align: center;
+            color: var(--text-primary);
+            display: none;
+        }
+
+        .error-message.visible {
+            display: block;
+        }
+
+        /* Results */
+        .results {
+            display: none;
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+
+        .results.active {
+            display: block;
+        }
+
+        .comparison-layout {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 20px;
+        }
+
+        .constellation-column {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .column-header {
+            text-align: center;
+            padding: 20px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            box-shadow: 0 8px 32px var(--glass-shadow);
+        }
+
+        .column-header.left {
+            border-top: 4px solid var(--snes-red);
+        }
+
+        .column-header.bridge {
+            border-top: 4px solid var(--snes-green);
+        }
+
+        .column-header.right {
+            border-top: 4px solid var(--snes-blue);
+        }
+
+        .column-word {
+            font-family: 'Space Mono', monospace;
+            font-size: 1.5rem;
+            color: var(--text-primary);
+            font-weight: 700;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+
+        .column-etymology {
+            font-size: 13px;
+            color: var(--text-secondary);
+            font-style: italic;
+            line-height: 1.5;
+        }
+
+        .bridge-title {
+            font-family: 'Space Mono', monospace;
+            font-size: 12px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: var(--snes-green);
+        }
+
+        .bridge-tension {
+            font-size: 14px;
+            color: var(--text-secondary);
+            line-height: 1.6;
+            margin-top: 12px;
+            font-style: italic;
+        }
+
+        .constellation-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 20px;
+            position: relative;
+            box-shadow: 0 4px 20px var(--glass-shadow);
+        }
+
+        .constellation-card::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 16px;
+            right: 16px;
+            height: 3px;
+            border-radius: 0 0 3px 3px;
+            opacity: 0.9;
+        }
+
+        .constellation-card.red::before { background: var(--snes-red); }
+        .constellation-card.yellow::before { background: var(--snes-yellow); }
+        .constellation-card.green::before { background: var(--snes-green); }
+        .constellation-card.blue::before { background: var(--snes-blue); }
+
+        .card-title {
+            font-family: 'Space Mono', monospace;
+            font-size: 10px;
+            color: var(--lavender);
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            margin-bottom: 12px;
+        }
+
+        .card-content {
+            font-size: 14px;
+            line-height: 1.7;
+            color: var(--text-secondary);
+        }
+
+        .card-content ul {
+            margin: 0;
+            padding-left: 18px;
+        }
+
+        .card-content li {
+            margin-bottom: 8px;
+        }
+
+        .card-content .quote {
+            font-style: italic;
+            border-left: 3px solid var(--lavender);
+            padding-left: 12px;
+            margin: 10px 0;
+            color: var(--text-primary);
+        }
+
+        .word-tag {
+            display: inline-block;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid var(--glass-border);
+            color: var(--text-primary);
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 13px;
+            margin: 3px;
+        }
+
+        /* Loading */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(26, 26, 46, 0.9);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .loading-overlay.visible {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .loading-spinner {
+            width: 60px;
+            height: 60px;
+            border: 3px solid rgba(255, 255, 255, 0.1);
+            border-top-color: var(--lavender);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        .loading-text {
+            margin-top: 1.5rem;
+            font-family: 'Space Mono', monospace;
+            font-size: 14px;
+            color: var(--lavender);
+            letter-spacing: 2px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            padding: 2rem;
+            font-family: 'Space Mono', monospace;
+            font-size: 10px;
+            color: var(--text-muted);
+            letter-spacing: 3px;
+        }
+
+        /* Responsive */
+        @media (max-width: 900px) {
+            .comparison-layout {
+                grid-template-columns: 1fr;
+            }
+
+            .constellation-column.bridge {
+                order: -1;
+            }
+        }
+
+        @media (max-width: 600px) {
+            .header h1 {
+                font-size: 1.5rem;
+                letter-spacing: 0.1em;
+            }
+
+            .search-container {
+                flex-direction: column;
+            }
+
+            .vs-divider {
+                margin: 0.5rem 0;
+            }
+
+            .search-btn {
+                width: 100%;
+                margin-top: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="terminal-header">// Lexisphere Compare</div>
+        <h1>WORD BRIDGE</h1>
+        <p>Discover the connections between two words</p>
+    </header>
+
+    <section class="search-panel">
+        <div class="search-container">
+            <div class="input-group">
+                <label class="input-label" for="word1Input">First Word</label>
+                <input
+                    type="text"
+                    class="search-input"
+                    id="word1Input"
+                    placeholder="e.g., love"
+                    autocomplete="off"
+                >
+            </div>
+
+            <div class="vs-divider">&amp;</div>
+
+            <div class="input-group">
+                <label class="input-label" for="word2Input">Second Word</label>
+                <input
+                    type="text"
+                    class="search-input"
+                    id="word2Input"
+                    placeholder="e.g., time"
+                    autocomplete="off"
+                >
+            </div>
+
+            <button class="search-btn" id="exploreBtn">Explore</button>
+        </div>
+        <div class="error-message" id="errorMessage"></div>
+    </section>
+
+    <div class="results" id="results">
+        <div class="comparison-layout">
+            <!-- Left Word Column -->
+            <div class="constellation-column" id="column-left">
+                <div class="column-header left">
+                    <div class="column-word" id="word1-title"></div>
+                    <div class="column-etymology" id="word1-etymology"></div>
+                </div>
+                <div id="cards-left"></div>
+            </div>
+
+            <!-- Bridge Column -->
+            <div class="constellation-column bridge" id="column-bridge">
+                <div class="column-header bridge">
+                    <div class="bridge-title">The Bridge</div>
+                    <div class="bridge-tension" id="bridge-tension"></div>
+                </div>
+                <div id="cards-bridge"></div>
+            </div>
+
+            <!-- Right Word Column -->
+            <div class="constellation-column" id="column-right">
+                <div class="column-header right">
+                    <div class="column-word" id="word2-title"></div>
+                    <div class="column-etymology" id="word2-etymology"></div>
+                </div>
+                <div id="cards-right"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-spinner"></div>
+        <div class="loading-text">Building bridges...</div>
+    </div>
+
+    <footer class="footer">/// HAVE A NICE DAY ///</footer>
+
+    <script>
+        const word1Input = document.getElementById('word1Input');
+        const word2Input = document.getElementById('word2Input');
+        const exploreBtn = document.getElementById('exploreBtn');
+        const errorMessage = document.getElementById('errorMessage');
+        const results = document.getElementById('results');
+        const loadingOverlay = document.getElementById('loadingOverlay');
+
+        // Submit on Enter key
+        [word1Input, word2Input].forEach(input => {
+            input.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') exploreBtn.click();
+            });
+        });
+
+        exploreBtn.addEventListener('click', async () => {
+            const word1 = word1Input.value.trim();
+            const word2 = word2Input.value.trim();
+
+            if (!word1 || !word2) {
+                showError('Please enter both words to compare.');
+                return;
+            }
+
+            hideError();
+            setLoading(true);
+            results.classList.remove('active');
+
+            try {
+                const response = await fetch('/compare-words', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ word1, word2 })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || 'Something went wrong');
+                }
+
+                renderComparison(data);
+
+            } catch (error) {
+                showError(error.message);
+            } finally {
+                setLoading(false);
+            }
+        });
+
+        function renderComparison(data) {
+            // Word 1 Column
+            document.getElementById('word1-title').textContent = data.word1;
+            document.getElementById('word1-etymology').textContent = data.constellation1.etymology || '';
+
+            const cardsLeft = document.getElementById('cards-left');
+            cardsLeft.innerHTML = '';
+
+            if (data.constellation1.synonyms?.length) {
+                cardsLeft.appendChild(createCard('Synonyms', 'red',
+                    data.constellation1.synonyms.map(s => `<span class="word-tag">${escapeHtml(s)}</span>`).join('')
+                ));
+            }
+            if (data.constellation1.metaphors?.length) {
+                cardsLeft.appendChild(createCard('Metaphors', 'yellow',
+                    '<ul>' + data.constellation1.metaphors.map(m => `<li>${escapeHtml(m)}</li>`).join('') + '</ul>'
+                ));
+            }
+            if (data.constellation1.quotes?.length) {
+                cardsLeft.appendChild(createCard('Quotes', 'red',
+                    data.constellation1.quotes.map(q => `<div class="quote">${escapeHtml(q)}</div>`).join('')
+                ));
+            }
+
+            // Word 2 Column
+            document.getElementById('word2-title').textContent = data.word2;
+            document.getElementById('word2-etymology').textContent = data.constellation2.etymology || '';
+
+            const cardsRight = document.getElementById('cards-right');
+            cardsRight.innerHTML = '';
+
+            if (data.constellation2.synonyms?.length) {
+                cardsRight.appendChild(createCard('Synonyms', 'blue',
+                    data.constellation2.synonyms.map(s => `<span class="word-tag">${escapeHtml(s)}</span>`).join('')
+                ));
+            }
+            if (data.constellation2.metaphors?.length) {
+                cardsRight.appendChild(createCard('Metaphors', 'yellow',
+                    '<ul>' + data.constellation2.metaphors.map(m => `<li>${escapeHtml(m)}</li>`).join('') + '</ul>'
+                ));
+            }
+            if (data.constellation2.quotes?.length) {
+                cardsRight.appendChild(createCard('Quotes', 'blue',
+                    data.constellation2.quotes.map(q => `<div class="quote">${escapeHtml(q)}</div>`).join('')
+                ));
+            }
+
+            // Bridge Column
+            document.getElementById('bridge-tension').textContent = data.bridge.tension || '';
+
+            const cardsBridge = document.getElementById('cards-bridge');
+            cardsBridge.innerHTML = '';
+
+            if (data.bridge.quotes_with_both?.length) {
+                cardsBridge.appendChild(createCard('Quotes With Both', 'green',
+                    data.bridge.quotes_with_both.map(q => `<div class="quote">${escapeHtml(q)}</div>`).join('')
+                ));
+            }
+            if (data.bridge.shared_idioms?.length) {
+                cardsBridge.appendChild(createCard('Shared Idioms', 'green',
+                    '<ul>' + data.bridge.shared_idioms.map(i => `<li>${escapeHtml(i)}</li>`).join('') + '</ul>'
+                ));
+            }
+            if (data.bridge.conceptual_links?.length) {
+                cardsBridge.appendChild(createCard('Conceptual Links', 'green',
+                    '<ul>' + data.bridge.conceptual_links.map(c => `<li>${escapeHtml(c)}</li>`).join('') + '</ul>'
+                ));
+            }
+            if (data.bridge.shared_metaphors?.length) {
+                cardsBridge.appendChild(createCard('Shared Metaphors', 'green',
+                    '<ul>' + data.bridge.shared_metaphors.map(m => `<li>${escapeHtml(m)}</li>`).join('') + '</ul>'
+                ));
+            }
+
+            results.classList.add('active');
+            results.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function createCard(title, color, content) {
+            const card = document.createElement('div');
+            card.className = `constellation-card ${color}`;
+            card.innerHTML = `
+                <div class="card-title">${title}</div>
+                <div class="card-content">${content}</div>
+            `;
+            return card;
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function setLoading(loading) {
+            loadingOverlay.classList.toggle('visible', loading);
+            exploreBtn.disabled = loading;
+        }
+
+        function showError(message) {
+            errorMessage.textContent = message;
+            errorMessage.classList.add('visible');
+        }
+
+        function hideError() {
+            errorMessage.classList.remove('visible');
+        }
+    </script>
+</body>
+</html>
